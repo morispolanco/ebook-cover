@@ -153,10 +153,10 @@
 
                 <div class="flex flex-wrap gap-3 justify-center">
                     <button id="btnJpg" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded flex items-center gap-2">
-                        <i class="fas fa-image"></i> Mostrar JPG
+                        <i class="fas fa-image"></i> Descargar JPG
                     </button>
                     <button id="btnPdf" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded flex items-center gap-2">
-                        <i class="fas fa-file-pdf"></i> Mostrar PDF
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
                     </button>
                 </div>
             </div>
@@ -172,27 +172,6 @@
                         <canvas id="coverCanvas" class="mx-auto border border-gray-300 dark:border-gray-700 shadow-lg"></canvas>
                     </div>
                 </div>
-                
-                <!-- Pantalla para mostrar el resultado final -->
-                <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
-                    <div class="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-2xl w-full mx-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold text-primary" id="exportTitle">Tu portada está lista</h3>
-                            <button id="closeExport" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                <i class="fas fa-times text-xl"></i>
-                            </button>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div id="exportContainer" class="mb-4 max-w-full"></div>
-                            <p class="text-center mb-4">Haz clic derecho sobre la imagen y selecciona "Guardar imagen como..." para descargarla.</p>
-                        </div>
-                        <div class="flex justify-center">
-                            <button id="closeModalBtn" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded">
-                                Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -202,13 +181,8 @@
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
         }
-        
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            if (event.matches) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+            document.documentElement.classList.toggle('dark', event.matches);
         });
 
         // Inicialización
@@ -217,35 +191,27 @@
             let canvas = new fabric.Canvas('coverCanvas');
             let currentTemplate = 'template1';
             let backgroundImage = null;
-            
-            // Configuración inicial del canvas
-            const canvasWidth = 400; // Ancho fijo para la vista previa
-            const aspectRatio = 1.6; // Relación de aspecto 1:1.6 (ancho:alto)
+
+            const canvasWidth = 400;
+            const aspectRatio = 1.6;
             const canvasHeight = canvasWidth * aspectRatio;
-            
+
             canvas.setWidth(canvasWidth);
             canvas.setHeight(canvasHeight);
-            
-            // Configurar elementos
+
             setupEventListeners();
             renderTemplate(currentTemplate);
-            
-            // Configuración de eventos
+
             function setupEventListeners() {
-                // Cambio de plantilla
                 document.querySelectorAll('.template-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        // Eliminar clase activa de todos los botones
                         document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active', 'bg-primary', 'text-white'));
-                        // Añadir clase activa al botón clickeado
                         this.classList.add('active', 'bg-primary', 'text-white');
-                        
                         currentTemplate = this.getAttribute('data-template');
                         renderTemplate(currentTemplate);
                     });
                 });
-                
-                // Subir imagen de fondo
+
                 document.getElementById('bgImageUpload').addEventListener('change', function(e) {
                     const file = e.target.files[0];
                     if (file) {
@@ -259,52 +225,19 @@
                         reader.readAsDataURL(file);
                     }
                 });
-                
-                // Cambios en el contenido
-                document.getElementById('title').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
+
+                ['title', 'subtitle', 'author', 'textColor', 'frameColor', 'frameOpacity', 'titleFont', 'authorFont'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => renderTemplate(currentTemplate));
+                    if (id.includes('Font')) document.getElementById(id).addEventListener('change', () => renderTemplate(currentTemplate));
                 });
-                
-                document.getElementById('subtitle').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('author').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('textColor').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('frameColor').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('frameOpacity').addEventListener('input', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('titleFont').addEventListener('change', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                document.getElementById('authorFont').addEventListener('change', function() {
-                    renderTemplate(currentTemplate);
-                });
-                
-                // Botones de exportación
+
                 document.getElementById('btnJpg').addEventListener('click', exportJpg);
                 document.getElementById('btnPdf').addEventListener('click', exportPdf);
-                document.getElementById('closeExport').addEventListener('click', closeExportModal);
-                document.getElementById('closeModalBtn').addEventListener('click', closeExportModal);
             }
-            
-            // Renderizado de la plantilla seleccionada
+
             function renderTemplate(templateName) {
                 canvas.clear();
-                
-                // Valores actuales
+
                 const title = document.getElementById('title').value;
                 const subtitle = document.getElementById('subtitle').value;
                 const author = document.getElementById('author').value;
@@ -313,210 +246,137 @@
                 const frameOpacity = document.getElementById('frameOpacity').value / 100;
                 const titleFontFamily = document.getElementById('titleFont').value;
                 const authorFontFamily = document.getElementById('authorFont').value;
-                
-                // Si hay imagen de fondo, añadirla primero
+
                 if (backgroundImage) {
                     backgroundImage.scaleToWidth(canvasWidth);
                     if (backgroundImage.getScaledHeight() < canvasHeight) {
                         backgroundImage.scaleToHeight(canvasHeight);
                     }
-                    
-                    // Centrar la imagen
-                    backgroundImage.set({
-                        left: canvasWidth / 2,
-                        top: canvasHeight / 2,
-                        originX: 'center',
-                        originY: 'center'
-                    });
-                    
+                    backgroundImage.set({ left: canvasWidth / 2, top: canvasHeight / 2, originX: 'center', originY: 'center' });
                     canvas.add(backgroundImage);
                     canvas.sendToBack(backgroundImage);
                 } else {
-                    // Fondo gris si no hay imagen
                     canvas.setBackgroundColor('#404040', canvas.renderAll.bind(canvas));
                 }
-                
-                // Renderizar la plantilla específica
+
                 switch(templateName) {
-                    case 'template1': // Marco simple
+                    case 'template1':
                         addSimpleFrame(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.5);
                         addAuthor(author, textColor, authorFontFamily, 0.8);
                         break;
-                    case 'template2': // Marco doble
+                    case 'template2':
                         addDoubleFrame(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.5);
                         addAuthor(author, textColor, authorFontFamily, 0.85);
                         break;
-                    case 'template3': // Diagonal
+                    case 'template3':
                         addDiagonalDesign(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.3);
                         addAuthor(author, textColor, authorFontFamily, 0.85);
                         break;
-                    case 'template4': // Minimalista
+                    case 'template4':
                         addMinimalistDesign(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.5);
                         addAuthor(author, textColor, authorFontFamily, 0.88);
                         break;
-                    case 'template5': // Geométrico
+                    case 'template5':
                         addGeometricDesign(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.5);
                         addAuthor(author, textColor, authorFontFamily, 0.85);
                         break;
-                    case 'template6': // Moderno
+                    case 'template6':
                         addModernDesign(frameColor, frameOpacity);
                         addTitle(title, subtitle, textColor, titleFontFamily, 0.45);
                         addAuthor(author, textColor, authorFontFamily, 0.85);
                         break;
                 }
-                
+
                 canvas.renderAll();
             }
-            
-            // Funciones para añadir diferentes diseños de marcos
+
             function addSimpleFrame(color, opacity) {
                 const margin = 20;
                 const rect = new fabric.Rect({
-                    left: margin,
-                    top: margin,
-                    width: canvasWidth - (margin * 2),
-                    height: canvasHeight - (margin * 2),
-                    fill: 'transparent',
-                    stroke: color,
-                    strokeWidth: 2,
-                    opacity: opacity
+                    left: margin, top: margin, width: canvasWidth - (margin * 2), height: canvasHeight - (margin * 2),
+                    fill: 'transparent', stroke: color, strokeWidth: 2, opacity: opacity
                 });
                 canvas.add(rect);
             }
-            
+
             function addDoubleFrame(color, opacity) {
-                const outerMargin = 15;
-                const innerMargin = 30;
-                
-                // Marco exterior
+                const outerMargin = 15, innerMargin = 30;
                 const outerRect = new fabric.Rect({
-                    left: outerMargin,
-                    top: outerMargin,
-                    width: canvasWidth - (outerMargin * 2),
-                    height: canvasHeight - (outerMargin * 2),
-                    fill: 'transparent',
-                    stroke: color,
-                    strokeWidth: 2,
-                    opacity: opacity
+                    left: outerMargin, top: outerMargin, width: canvasWidth - (outerMargin * 2), height: canvasHeight - (outerMargin * 2),
+                    fill: 'transparent', stroke: color, strokeWidth: 2, opacity: opacity
                 });
-                
-                // Marco interior
                 const innerRect = new fabric.Rect({
-                    left: innerMargin,
-                    top: innerMargin,
-                    width: canvasWidth - (innerMargin * 2),
-                    height: canvasHeight - (innerMargin * 2),
-                    fill: 'transparent',
-                    stroke: color,
-                    strokeWidth: 1,
-                    opacity: opacity
+                    left: innerMargin, top: innerMargin, width: canvasWidth - (innerMargin * 2), height: canvasHeight - (innerMargin * 2),
+                    fill: 'transparent', stroke: color, strokeWidth: 1, opacity: opacity
                 });
-                
                 canvas.add(outerRect, innerRect);
             }
-            
+
             function addDiagonalDesign(color, opacity) {
-                // Rectángulo que cubre toda la esquina superior izquierda
                 const rect = new fabric.Polygon([
                     { x: 0, y: 0 },
                     { x: canvasWidth * 0.6, y: 0 },
                     { x: 0, y: canvasHeight * 0.6 }
-                ], {
-                    fill: color,
-                    opacity: opacity * 0.7
-                });
-                
+                ], { fill: color, opacity: opacity * 0.7 });
                 canvas.add(rect);
             }
-            
+
             function addMinimalistDesign(color, opacity) {
-                // Líneas horizontales arriba y abajo
-                const lineTop = new fabric.Line([20, 40, canvasWidth - 20, 40], {
-                    stroke: color,
-                    strokeWidth: 2,
-                    opacity: opacity
-                });
-                
-                const lineBottom = new fabric.Line([20, canvasHeight - 40, canvasWidth - 20, canvasHeight - 40], {
-                    stroke: color,
-                    strokeWidth: 2,
-                    opacity: opacity
-                });
-                
+                const lineTop = new fabric.Line([20, 40, canvasWidth - 20, 40], { stroke: color, strokeWidth: 2, opacity: opacity });
+                const lineBottom = new fabric.Line([20, canvasHeight - 40, canvasWidth - 20, canvasHeight - 40], { stroke: color, strokeWidth: 2, opacity: opacity });
                 canvas.add(lineTop, lineBottom);
             }
-            
+
             function addGeometricDesign(color, opacity) {
-                // Círculo grande en el centro
                 const circle = new fabric.Circle({
-                    radius: canvasWidth / 3,
-                    left: canvasWidth / 2,
-                    top: canvasHeight / 2,
-                    originX: 'center',
-                    originY: 'center',
-                    fill: 'transparent',
-                    stroke: color,
-                    strokeWidth: 2,
-                    opacity: opacity
+                    radius: canvasWidth / 3, left: canvasWidth / 2, top: canvasHeight / 2,
+                    originX: 'center', originY: 'center', fill: 'transparent', stroke: color, strokeWidth: 2, opacity: opacity
                 });
-                
-                // Rombo interior
                 const diamond = new fabric.Polygon([
                     { x: canvasWidth / 2, y: canvasHeight / 2 - canvasWidth / 4 },
                     { x: canvasWidth / 2 + canvasWidth / 4, y: canvasHeight / 2 },
                     { x: canvasWidth / 2, y: canvasHeight / 2 + canvasWidth / 4 },
                     { x: canvasWidth / 2 - canvasWidth / 4, y: canvasHeight / 2 }
-                ], {
-                    fill: 'transparent',
-                    stroke: color,
-                    strokeWidth: 1,
-                    opacity: opacity
-                });
-                
+                ], { fill: 'transparent', stroke: color, strokeWidth: 1, opacity: opacity });
                 canvas.add(circle, diamond);
             }
-            
+
             function addModernDesign(color, opacity) {
-                // Rectángulo de fondo semitransparente
                 const rect = new fabric.Rect({
-                    left: 0,
-                    top: canvasHeight * 0.35,
-                    width: canvasWidth,
-                    height: canvasHeight * 0.3,
-                    fill: color,
-                    opacity: opacity * 0.5
+                    left: 0, top: canvasHeight * 0.35, width: canvasWidth, height: canvasHeight * 0.3,
+                    fill: color, opacity: opacity * 0.5
                 });
-                
                 canvas.add(rect);
             }
-            
-            // Funciones para añadir texto (título, subtítulo, autor)
+
             function addTitle(title, subtitle, color, fontFamily, relativeY) {
-                const titleText = new fabric.Text(title.toUpperCase(), {
+                const titleText = new fabric.Textbox(title.toUpperCase(), {
                     left: canvasWidth / 2,
                     top: canvasHeight * relativeY,
+                    width: canvasWidth - 60,
                     fontFamily: fontFamily,
                     fontSize: 30,
                     fontWeight: 'bold',
                     fill: color,
                     textAlign: 'center',
                     originX: 'center',
-                    originY: 'center'
+                    originY: 'center',
+                    breakWords: true,
+                    lineHeight: 1.2
                 });
-                
                 canvas.add(titleText);
-                
-                // Ajustar tamaño del título si es demasiado largo
-                if (titleText.width > canvasWidth - 60) {
-                    titleText.scaleToWidth(canvasWidth - 60);
+
+                while (titleText.height > canvasHeight * 0.3 && titleText.fontSize > 10) {
+                    titleText.fontSize -= 2;
+                    titleText.set({ fontSize: titleText.fontSize });
+                    canvas.renderAll();
                 }
-                
-                // Añadir subtítulo si existe
+
                 if (subtitle) {
                     const subtitleText = new fabric.Text(subtitle, {
                         left: canvasWidth / 2,
@@ -528,16 +388,13 @@
                         originX: 'center',
                         originY: 'center'
                     });
-                    
                     canvas.add(subtitleText);
-                    
-                    // Ajustar tamaño del subtítulo si es demasiado largo
                     if (subtitleText.width > canvasWidth - 80) {
                         subtitleText.scaleToWidth(canvasWidth - 80);
                     }
                 }
             }
-            
+
             function addAuthor(author, color, fontFamily, relativeY) {
                 const authorText = new fabric.Text(author, {
                     left: canvasWidth / 2,
@@ -549,261 +406,149 @@
                     originX: 'center',
                     originY: 'center'
                 });
-                
                 canvas.add(authorText);
-                
-                // Ajustar tamaño si es demasiado largo
                 if (authorText.width > canvasWidth - 60) {
                     authorText.scaleToWidth(canvasWidth - 60);
                 }
             }
-            
-            // Funciones de exportación
-            function exportJpg() {
-                // Para exportar a tamaño completo, creamos un canvas temporal fuera de pantalla
-                const tempCanvas = document.createElement('canvas');
-                const finalWidth = 1600; // Ancho recomendado por KDP
-                const finalHeight = finalWidth * aspectRatio; // Alto proporcional
-                
-                tempCanvas.width = finalWidth;
-                tempCanvas.height = finalHeight;
-                
-                // Crear un nuevo fabricJS canvas del tamaño correcto
-                const exportCanvas = new fabric.Canvas(tempCanvas);
-                exportCanvas.setWidth(finalWidth);
-                exportCanvas.setHeight(finalHeight);
-                
-                // Función para escalar un objeto del canvas original al tamaño final
-                function scaleObject(obj) {
-                    const scaleFactor = finalWidth / canvasWidth;
-                    const clonedObj = fabric.util.object.clone(obj);
-                    
-                    // Escalar posición y tamaño
-                    clonedObj.scaleX = clonedObj.scaleX * scaleFactor;
-                    clonedObj.scaleY = clonedObj.scaleY * scaleFactor;
-                    clonedObj.left = clonedObj.left * scaleFactor;
-                    clonedObj.top = clonedObj.top * scaleFactor;
-                    
-                    // Para textos, escalamos el tamaño de fuente en lugar del objeto
-                    if (clonedObj.type === 'text') {
-                        clonedObj.fontSize = clonedObj.fontSize * scaleFactor;
-                        clonedObj.scaleX = 1;
-                        clonedObj.scaleY = 1;
+
+            function scaleObject(obj, scaleFactor) {
+                const clonedObj = fabric.util.object.clone(obj);
+                clonedObj.scaleX = clonedObj.scaleX * scaleFactor;
+                clonedObj.scaleY = clonedObj.scaleY * scaleFactor;
+                clonedObj.left = clonedObj.left * scaleFactor;
+                clonedObj.top = clonedObj.top * scaleFactor;
+
+                if (clonedObj.type === 'textbox' || clonedObj.type === 'text') {
+                    clonedObj.fontSize = clonedObj.fontSize * scaleFactor;
+                    clonedObj.scaleX = 1;
+                    clonedObj.scaleY = 1;
+                    if (clonedObj.type === 'textbox') {
+                        clonedObj.width = clonedObj.width * scaleFactor;
                     }
-                    
-                    // Para líneas, ajustamos las coordenadas
-                    if (clonedObj.type === 'line') {
-                        clonedObj.x1 = clonedObj.x1 * scaleFactor;
-                        clonedObj.y1 = clonedObj.y1 * scaleFactor;
-                        clonedObj.x2 = clonedObj.x2 * scaleFactor;
-                        clonedObj.y2 = clonedObj.y2 * scaleFactor;
-                    }
-                    
-                    // Ajustar el grosor de línea para objetos con bordes
-                    if (clonedObj.strokeWidth) {
-                        clonedObj.strokeWidth = clonedObj.strokeWidth * scaleFactor;
-                    }
-                    
-                    return clonedObj;
                 }
-                
-                // Copiar el color de fondo
-                exportCanvas.setBackgroundColor(canvas.backgroundColor, () => {});
-                
-                // Añadir imagen de fondo primero si existe
-                if (backgroundImage) {
-                    fabric.Image.fromURL(backgroundImage._element.src, function(img) {
-                        const scaleFactor = finalWidth / canvasWidth;
-                        
-                        // Escalar manteniendo proporciones
-                        img.scaleToWidth(backgroundImage.getScaledWidth() * scaleFactor);
-                        
-                        // Centrar
-                        img.set({
-                            left: finalWidth / 2,
-                            top: finalHeight / 2,
-                            originX: 'center',
-                            originY: 'center'
-                        });
-                        
-                        exportCanvas.add(img);
-                        exportCanvas.sendToBack(img);
-                        
-                        // Ahora añadir el resto de objetos
-                        canvas.forEachObject(function(obj) {
-                            if (obj !== backgroundImage) {
-                                const scaledObj = scaleObject(obj);
-                                exportCanvas.add(scaledObj);
-                            }
-                        });
-                        
-                        exportCanvas.renderAll();
-                        
-                        // Mostrar la imagen
-                        showExportedImage(tempCanvas.toDataURL('image/jpeg', 0.9), 'jpg');
-                    });
-                } else {
-                    // Si no hay imagen de fondo, simplemente añadir todos los objetos
-                    canvas.forEachObject(function(obj) {
-                        const scaledObj = scaleObject(obj);
-                        exportCanvas.add(scaledObj);
-                    });
-                    
-                    exportCanvas.renderAll();
-                    
-                    // Mostrar la imagen
-                    showExportedImage(tempCanvas.toDataURL('image/jpeg', 0.9), 'jpg');
+
+                if (clonedObj.type === 'line') {
+                    clonedObj.x1 = clonedObj.x1 * scaleFactor;
+                    clonedObj.y1 = clonedObj.y1 * scaleFactor;
+                    clonedObj.x2 = clonedObj.x2 * scaleFactor;
+                    clonedObj.y2 = clonedObj.y2 * scaleFactor;
                 }
+
+                if (clonedObj.strokeWidth) {
+                    clonedObj.strokeWidth = clonedObj.strokeWidth * scaleFactor;
+                }
+
+                return clonedObj;
             }
-            
-            function exportPdf() {
-                // Primero generamos la imagen en alta resolución
+
+            function exportJpg() {
                 const tempCanvas = document.createElement('canvas');
                 const finalWidth = 1600;
                 const finalHeight = finalWidth * aspectRatio;
-                
+
                 tempCanvas.width = finalWidth;
                 tempCanvas.height = finalHeight;
-                
-                // Crear un nuevo fabricJS canvas del tamaño correcto
+
                 const exportCanvas = new fabric.Canvas(tempCanvas);
                 exportCanvas.setWidth(finalWidth);
                 exportCanvas.setHeight(finalHeight);
-                
-                // Función para escalar objetos (igual que en exportJpg)
-                function scaleObject(obj) {
-                    const scaleFactor = finalWidth / canvasWidth;
-                    const clonedObj = fabric.util.object.clone(obj);
-                    
-                    clonedObj.scaleX = clonedObj.scaleX * scaleFactor;
-                    clonedObj.scaleY = clonedObj.scaleY * scaleFactor;
-                    clonedObj.left = clonedObj.left * scaleFactor;
-                    clonedObj.top = clonedObj.top * scaleFactor;
-                    
-                    if (clonedObj.type === 'text') {
-                        clonedObj.fontSize = clonedObj.fontSize * scaleFactor;
-                        clonedObj.scaleX = 1;
-                        clonedObj.scaleY = 1;
-                    }
-                    
-                    if (clonedObj.type === 'line') {
-                        clonedObj.x1 = clonedObj.x1 * scaleFactor;
-                        clonedObj.y1 = clonedObj.y1 * scaleFactor;
-                        clonedObj.x2 = clonedObj.x2 * scaleFactor;
-                        clonedObj.y2 = clonedObj.y2 * scaleFactor;
-                    }
-                    
-                    if (clonedObj.strokeWidth) {
-                        clonedObj.strokeWidth = clonedObj.strokeWidth * scaleFactor;
-                    }
-                    
-                    return clonedObj;
-                }
-                
-                // Copiar el color de fondo
+
                 exportCanvas.setBackgroundColor(canvas.backgroundColor, () => {});
-                
-                // Añadir imagen de fondo primero si existe
+
+                const scaleFactor = finalWidth / canvasWidth;
+
                 if (backgroundImage) {
                     fabric.Image.fromURL(backgroundImage._element.src, function(img) {
-                        const scaleFactor = finalWidth / canvasWidth;
-                        
                         img.scaleToWidth(backgroundImage.getScaledWidth() * scaleFactor);
-                        
-                        img.set({
-                            left: finalWidth / 2,
-                            top: finalHeight / 2,
-                            originX: 'center',
-                            originY: 'center'
-                        });
-                        
+                        img.set({ left: finalWidth / 2, top: finalHeight / 2, originX: 'center', originY: 'center' });
                         exportCanvas.add(img);
                         exportCanvas.sendToBack(img);
-                        
+
                         canvas.forEachObject(function(obj) {
                             if (obj !== backgroundImage) {
-                                const scaledObj = scaleObject(obj);
+                                const scaledObj = scaleObject(obj, scaleFactor);
                                 exportCanvas.add(scaledObj);
                             }
                         });
-                        
+
                         exportCanvas.renderAll();
-                        
-                        // Crear PDF de la imagen
-                        const imgData = tempCanvas.toDataURL('image/jpeg', 1.0);
-                        const pdf = new jsPDF({
-                            orientation: 'portrait',
-                            unit: 'mm',
-                            format: [Math.round(finalWidth / 4), Math.round(finalHeight / 4)]
-                        });
-                        
-                        pdf.addImage(imgData, 'JPEG', 0, 0, Math.round(finalWidth / 4), Math.round(finalHeight / 4));
-                        
-                        // Mostrar PDF como imagen
-                        const pdfData = pdf.output('datauristring');
-                        showExportedImage(pdfData, 'pdf');
+                        downloadFile(tempCanvas.toDataURL('image/jpeg', 0.9), 'cover.jpg');
                     });
                 } else {
                     canvas.forEachObject(function(obj) {
-                        const scaledObj = scaleObject(obj);
+                        const scaledObj = scaleObject(obj, scaleFactor);
                         exportCanvas.add(scaledObj);
                     });
-                    
                     exportCanvas.renderAll();
-                    
-                    // Crear PDF
+                    downloadFile(tempCanvas.toDataURL('image/jpeg', 0.9), 'cover.jpg');
+                }
+            }
+
+            function exportPdf() {
+                const tempCanvas = document.createElement('canvas');
+                const finalWidth = 1600;
+                const finalHeight = finalWidth * aspectRatio;
+
+                tempCanvas.width = finalWidth;
+                tempCanvas.height = finalHeight;
+
+                const exportCanvas = new fabric.Canvas(tempCanvas);
+                exportCanvas.setWidth(finalWidth);
+                exportCanvas.setHeight(finalHeight);
+
+                exportCanvas.setBackgroundColor(canvas.backgroundColor, () => {});
+
+                const scaleFactor = finalWidth / canvasWidth;
+
+                if (backgroundImage) {
+                    fabric.Image.fromURL(backgroundImage._element.src, function(img) {
+                        img.scaleToWidth(backgroundImage.getScaledWidth() * scaleFactor);
+                        img.set({ left: finalWidth / 2, top: finalHeight / 2, originX: 'center', originY: 'center' });
+                        exportCanvas.add(img);
+                        exportCanvas.sendToBack(img);
+
+                        canvas.forEachObject(function(obj) {
+                            if (obj !== backgroundImage) {
+                                const scaledObj = scaleObject(obj, scaleFactor);
+                                exportCanvas.add(scaledObj);
+                            }
+                        });
+
+                        exportCanvas.renderAll();
+                        const imgData = tempCanvas.toDataURL('image/jpeg', 1.0);
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'px',
+                            format: [finalWidth, finalHeight]
+                        });
+                        pdf.addImage(imgData, 'JPEG', 0, 0, finalWidth, finalHeight);
+                        downloadFile(pdf.output('datauristring'), 'cover.pdf');
+                    });
+                } else {
+                    canvas.forEachObject(function(obj) {
+                        const scaledObj = scaleObject(obj, scaleFactor);
+                        exportCanvas.add(scaledObj);
+                    });
+                    exportCanvas.renderAll();
                     const imgData = tempCanvas.toDataURL('image/jpeg', 1.0);
                     const pdf = new jsPDF({
                         orientation: 'portrait',
-                        unit: 'mm',
-                        format: [Math.round(finalWidth / 4), Math.round(finalHeight / 4)]
+                        unit: 'px',
+                        format: [finalWidth, finalHeight]
                     });
-                    
-                    pdf.addImage(imgData, 'JPEG', 0, 0, Math.round(finalWidth / 4), Math.round(finalHeight / 4));
-                    
-                    // Mostrar PDF como imagen
-                    const pdfData = pdf.output('datauristring');
-                    showExportedImage(pdfData, 'pdf');
+                    pdf.addImage(imgData, 'JPEG', 0, 0, finalWidth, finalHeight);
+                    downloadFile(pdf.output('datauristring'), 'cover.pdf');
                 }
             }
-            
-            // Mostrar imagen o PDF exportado
-            function showExportedImage(dataUrl, type) {
-                const modal = document.getElementById('exportModal');
-                const container = document.getElementById('exportContainer');
-                const title = document.getElementById('exportTitle');
-                
-                // Limpiar contenedor
-                container.innerHTML = '';
-                
-                if (type === 'jpg') {
-                    title.textContent = 'Tu portada JPG está lista';
-                    
-                    const img = document.createElement('img');
-                    img.src = dataUrl;
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
-                    img.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-                    
-                    container.appendChild(img);
-                } else {
-                    title.textContent = 'Tu portada PDF está lista';
-                    
-                    const iframe = document.createElement('iframe');
-                    iframe.src = dataUrl;
-                    iframe.style.width = '100%';
-                    iframe.style.height = '500px';
-                    iframe.style.border = 'none';
-                    
-                    container.appendChild(iframe);
-                }
-                
-                modal.classList.remove('hidden');
-            }
-            
-            function closeExportModal() {
-                const modal = document.getElementById('exportModal');
-                modal.classList.add('hidden');
+
+            function downloadFile(dataUrl, filename) {
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
         });
     </script>
